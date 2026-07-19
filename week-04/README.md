@@ -1,7 +1,6 @@
 # Week 4 — Tool Use & The Agent Loop (the core week)
 
-**Why:** The agent loop — model → tool call → execute → feed result back → repeat — *is* what an
-agent is. Build it by hand first, then see exactly what a framework abstracts away.
+**Why:** The agent loop — model → tool call → execute → feed result back → repeat — *is* what an agent is. Build it by hand first, then see exactly what a framework abstracts away.
 
 ## Learn (~3 hrs)
 - The tool/function-calling spec (tool schemas, tool_use / tool_result message turns)
