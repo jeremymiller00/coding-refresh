@@ -193,7 +193,6 @@ class LLMClient:
             messages=messages,
             max_tokens=max_tokens,
             temperature=temperature,
-            tools=tools,
             )
 
         # anthropic api requires sys prompt as a separate parameter
@@ -218,28 +217,28 @@ class LLMClient:
                 if line[:4] == "data":
                     clean_line = json.loads(line[6:])
 
-                # yield text response chunk
-                if clean_line.get("type") == "content_block_delta":
-                    if clean_line.get("delta").get("type") == "text_delta":
-                        yield clean_line.get("delta").get("text")
-
-                # end of message summary
-                elif clean_line.get("type") == "message_delta":
-                    input_tokens = clean_line.get("usage").get("input_tokens")
-                    output_tokens = clean_line.get("usage").get("output_tokens")
-                    cost = estimate_cost(
-                        input_tokens=input_tokens,
-                        output_tokens=output_tokens,
-                        input_per_mtok=PRICING.get(self.model).input_per_mtok,
-                        output_per_mtok=PRICING.get(self.model).output_per_mtok
-                    )
-                    yield LLMResponse(
-                        text="",
-                        model=self.model,
-                        input_tokens=input_tokens,
-                        output_tokens=output_tokens,
-                        cost_usd=cost
-                    )
+                    # yield text response chunk
+                    if clean_line.get("type") == "content_block_delta":
+                        if clean_line.get("delta").get("type") == "text_delta":
+                            yield clean_line.get("delta").get("text")
+    
+                    # end of message summary
+                    elif clean_line.get("type") == "message_delta":
+                        input_tokens = clean_line.get("usage").get("input_tokens")
+                        output_tokens = clean_line.get("usage").get("output_tokens")
+                        cost = estimate_cost(
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                            input_per_mtok=PRICING.get(self.model).input_per_mtok,
+                            output_per_mtok=PRICING.get(self.model).output_per_mtok
+                        )
+                        yield LLMResponse(
+                            text="",
+                            model=self.model,
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                            cost_usd=cost
+                        )
 
     def _build_payload(
         self,

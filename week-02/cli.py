@@ -66,7 +66,7 @@ def main(argv: list[str] | None = None) -> int:
     # TODO: implement the stream / no-stream branches and the usage line (to stderr).
 
     if args.stream:
-        for chunk in _client.stream(_messages, tools=TOOLS):
+        for chunk in _client.stream(_messages):
             if type(chunk) is not LLMResponse:
                 print(chunk, end="", flush=True)
             else:

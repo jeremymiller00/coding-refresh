@@ -1,2 +1,5 @@
 make it generic beyond Anthropic
 work with local llm
+
+max tokens and temp parameters from cli are not integrated
+
