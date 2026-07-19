@@ -1,0 +1,41 @@
+[project]
+name = "coding-refresh"
+version = "0.1.0"
+description = "AI Engineering & Agents 8-week curriculum — capstone agent built across weeks."
+requires-python = ">=3.12"
+dependencies = [
+    # Added progressively as each week needs them. Start minimal.
+    # Week 2+: "anthropic>=0.40", "python-dotenv>=1.0"
+    # Week 3+: "pydantic>=2.7"
+    # Week 5+: "chromadb" or "sqlite-vec"
+    # Week 8+: "fastapi", "uvicorn"
+    "dotenv>=0.9.9",
+    "pydantic>=2.13.4",
+    "requests>=2.34.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# Sensible default set: pyflakes, pycodestyle, isort, bugbear, pyupgrade.
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+python_files = ["test_*.py", "*_test.py"]
+# Make shared capstone code under src/ importable in tests (e.g. `import llm_client`).
+pythonpath = ["src"]
+addopts = "-q"
+
+[tool.uv]
+# This is an exercise repo, not an installable library — don't try to build/install it.
+package = false
