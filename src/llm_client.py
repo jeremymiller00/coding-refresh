@@ -128,21 +128,73 @@ class LLMClient:
             }
 
     @call_with_retries
+    def agent_complete(
+        self,
+        convo: list[Turn],
+        tools: list[Tool] = []
+    ) -> LLMResponse:
+        """
+        One-shot agentic completion.
+        May return tool calls.
+        """
+       
+        payload = self._build_payload(
+            messages=convo,
+            max_tokens=1024,
+            temperature=1.0,
+            tools=tools,
+            stream=False
+        )
+
+        # anthropic api requires sys prompt as a separate parameter
+        payload = self._set_sys_prompt_parameter(
+            payload=payload,
+            messages=convo,
+        )
+
+        try:
+            response = requests.post(
+                url="https://api.anthropic.com/v1/messages",
+                headers=self.headers,
+                json=payload
+                )
+            response.raise_for_status()
+        except requests.exceptions.HTTPError:
+            raise
+
+        # parse out if tool call
+
+        json_response = response.json()
+        input_tokens = json_response.get("usage").get("input_tokens")
+        output_tokens = json_response.get("usage").get("output_tokens")
+        cost = estimate_cost(
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            input_per_mtok=PRICING.get(self.model).input_per_mtok,
+            output_per_mtok=PRICING.get(self.model).output_per_mtok
+        )
+        text_response = json_response.get("content")[0].get("text")
+        return LLMResponse(
+            text=text_response,
+            model=self.model,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_usd=cost)
+
+    @call_with_retries
     def complete(
         self,
         messages: list[Message],
         *,
         max_tokens: int = 1024,
-        temperature: float = 1.0,
-        tools: list[Tool] = []
+        temperature: float = 1.0
     ) -> LLMResponse:
         """One-shot completion. Returns text plus token usage and computed cost."""
-       
+
         payload = self._build_payload(
             messages=messages,
             max_tokens=max_tokens,
             temperature=temperature,
-            tools=tools,
             stream=False
         )
 
@@ -242,9 +294,10 @@ class LLMClient:
 
     def _build_payload(
         self,
-        messages: list[Turn],
+        messages: list[Message],
         max_tokens: int = 1024,
         temperature: float = 1.0,
+        tools: list[Tool] = None,
         stream: bool = True
     ) -> dict[str, any]:
         payload = {
@@ -254,6 +307,10 @@ class LLMClient:
             "stream": stream,
             "messages": [{"role": message.role, "content": message.content} for message in messages if message.role.lower() != "system"]
         }
+
+        if tools:
+            payload.update({"tools": tools})
+
         return payload
 
     def _set_sys_prompt_parameter(

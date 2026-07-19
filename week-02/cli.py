@@ -51,6 +51,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--system", default=None, help="Optional system prompt")
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument(
+        "--agent",
+        dest="agent",
+        action="store_true",
+        help="Use agent mode; tool calls, no streaming",
+    )
+    parser.add_argument(
         "--no-stream",
         dest="stream",
         action="store_false",
@@ -65,7 +71,10 @@ def main(argv: list[str] | None = None) -> int:
     # print(_messages)
     # TODO: implement the stream / no-stream branches and the usage line (to stderr).
 
-    if args.stream:
+    if args.agent:
+        run_agent(prompt=args.prompt, tools=TOOLS, model=_client.agent_complete)
+
+    elif args.stream:
         for chunk in _client.stream(_messages):
             if type(chunk) is not LLMResponse:
                 print(chunk, end="", flush=True)

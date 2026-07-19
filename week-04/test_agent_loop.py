@@ -30,7 +30,7 @@ TOOLS = [ADD, BOOM]
 
 
 def _last_tool_result(convo: list[Turn]) -> str | None:
-    results = [t.text for t in convo if t.role == "tool"]
+    results = [t.content for t in convo if t.role == "tool"]
     return results[-1] if results else None
 
 
@@ -54,7 +54,7 @@ def test_execute_tool_captures_exception():
 
 def test_returns_final_answer_immediately():
     def model(convo, tools):
-        return Turn(role="assistant", text="done")
+        return Turn(role="assistant", content="done")
 
     assert run_agent("hi", tools=TOOLS, model=model) == "done"
 
@@ -64,7 +64,7 @@ def test_tool_result_is_fed_back():
     def model(convo, tools):
         if _last_tool_result(convo) is None:
             return Turn(role="assistant", tool_calls=[ToolCall("c1", "add", {"a": 2, "b": 3})])
-        return Turn(role="assistant", text=f"the answer is {_last_tool_result(convo)}")
+        return Turn(role="assistant", content=f"the answer is {_last_tool_result(convo)}")
 
     assert run_agent("add 2 and 3", tools=TOOLS, model=model) == "the answer is 5"
 
@@ -74,7 +74,7 @@ def test_recovers_from_tool_error():
         result = _last_tool_result(convo)
         if result is None:
             return Turn(role="assistant", tool_calls=[ToolCall("c1", "boom", {})])
-        return Turn(role="assistant", text=f"handled: {result}")
+        return Turn(role="assistant", content=f"handled: {result}")
 
     out = run_agent("do the thing", tools=TOOLS, model=model)
     assert out.startswith("handled:") and "kaboom" in out
