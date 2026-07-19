@@ -1,5 +1,7 @@
 # coding-refresh
 
+# This branch is a stash of the first failed agent integration attempt
+
 An 8-week, project-driven curriculum to resharpen coding skills for **AI engineering and agents**.
 You build one agent (the capstone) across the course; each week adds a real capability.
 
