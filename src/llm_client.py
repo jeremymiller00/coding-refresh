@@ -182,8 +182,7 @@ class LLMClient:
     @call_with_retries
     def stream(
         self,
-        messages: list[Turn],
-        tools: list[Tool] = [],
+        messages: list[Message],
         *,
         max_tokens: int = 1024,
         temperature: float = 1.0,
@@ -213,82 +212,50 @@ class LLMClient:
         except requests.exceptions.HTTPError:
             raise
 
-        arguments = ""  # in case of tool call
-
         for line in response.iter_lines(decode_unicode=True):
             if line:
                 # print(line + "\n")
                 if line[:4] == "data":
                     clean_line = json.loads(line[6:])
 
-                    # check for tool use start
-                    if clean_line.get("type") == "content_block_start":
-                        if clean_line.get("content_block").get("type") == "tool_use":
-                            # store tool call metadata
-                            tool_call_id = clean_line.get("content_block").get("id")
-                            tool_name = clean_line.get("content_block").get("name")
+                # yield text response chunk
+                if clean_line.get("type") == "content_block_delta":
+                    if clean_line.get("delta").get("type") == "text_delta":
+                        yield clean_line.get("delta").get("text")
 
-                    # check for tool use segment
-                    elif clean_line.get("type") == "content_block_delta":
-                        if clean_line.get("delta").get("type") == "input_json_delta":
-                            arguments += clean_line.get("delta").get("partial_json")
-
-                    # check for tool use end
-                    elif clean_line.get("type") == "message_delta":
-                        if clean_line.get("delta").get("stop_reason") == "tool_use":
-                            json_arguments = json.loads(arguments)
-                            tool_call = ToolCall(id=tool_call_id, name=tool_name, arguments=json_arguments)
-                            return Turn(role="tool", text="", tool_calls=[tool_call], tool_call_id=tool_call_id)
-
-                    # yield text response chunk
-                    elif clean_line.get("type") == "content_block_delta":
-                        if clean_line.get("delta").get("type") == "text_delta":
-                            yield clean_line.get("delta").get("text")
-
-                    # end of message summary
-                    elif clean_line.get("type") == "message_delta":
-                        input_tokens = clean_line.get("usage").get("input_tokens")
-                        output_tokens = clean_line.get("usage").get("output_tokens")
-                        cost = estimate_cost(
-                            input_tokens=input_tokens,
-                            output_tokens=output_tokens,
-                            input_per_mtok=PRICING.get(self.model).input_per_mtok,
-                            output_per_mtok=PRICING.get(self.model).output_per_mtok
-                        )
-                        yield LLMResponse(
-                            text="",
-                            model=self.model,
-                            input_tokens=input_tokens,
-                            output_tokens=output_tokens,
-                            cost_usd=cost
-                        )
+                # end of message summary
+                elif clean_line.get("type") == "message_delta":
+                    input_tokens = clean_line.get("usage").get("input_tokens")
+                    output_tokens = clean_line.get("usage").get("output_tokens")
+                    cost = estimate_cost(
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                        input_per_mtok=PRICING.get(self.model).input_per_mtok,
+                        output_per_mtok=PRICING.get(self.model).output_per_mtok
+                    )
+                    yield LLMResponse(
+                        text="",
+                        model=self.model,
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                        cost_usd=cost
+                    )
 
     def _build_payload(
         self,
         messages: list[Turn],
         max_tokens: int = 1024,
         temperature: float = 1.0,
-        tools: list[Tool] = [],
         stream: bool = True
     ) -> dict[str, any]:
-        prepped_tools = self._prep_tools_for_payload(tools=tools)
         payload = {
             "max_tokens": max_tokens,
             "temperature": temperature,
             "model": self.model,
             "stream": stream,
-            "tools": prepped_tools,
             "messages": [{"role": message.role, "content": message.content} for message in messages if message.role.lower() != "system"]
         }
         return payload
-
-    def _prep_tools_for_payload(self, tools: list[Tool]):
-        prepped_tools = []
-        for tool in tools:
-            tool_as_dict = asdict(tool)
-            prepped = {k: v for k, v in tool_as_dict.items() if k != "fn"}
-            prepped_tools.append(prepped)
-        return prepped_tools
 
     def _set_sys_prompt_parameter(
             self,

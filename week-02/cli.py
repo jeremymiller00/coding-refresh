@@ -51,11 +51,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--system", default=None, help="Optional system prompt")
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument(
-        "--agent",
-        dest="agent",
-        action="store_true",
-        help="Run in agent mode")
-    parser.add_argument(
         "--no-stream",
         dest="stream",
         action="store_false",
@@ -69,10 +64,6 @@ def main(argv: list[str] | None = None) -> int:
     _messages = build_messages(args.prompt, system=args.system)
     # print(_messages)
     # TODO: implement the stream / no-stream branches and the usage line (to stderr).
-    if args.agent:
-        # for now just pass the prompt
-        # will need to figure out how to incude system prompt
-        run_agent(prompt=args.prompt, tools=[TOOLS], model=_client.stream)
 
     if args.stream:
         for chunk in _client.stream(_messages, tools=TOOLS):
