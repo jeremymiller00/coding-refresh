@@ -20,27 +20,68 @@ Fill in the two TODOs below.
 """
 
 from __future__ import annotations
+import argparse
 
+from deepagents import create_deep_agent
+
+
+DEFAULT_MODEL = "anthropic:claude-haiku-4-5"
 
 def add(a: int, b: int) -> int:
     """The same tool your hand-rolled agent used — reuse it here so the task matches."""
     return a + b
 
 
-def build_agent():  # return type depends on the framework you choose
+def build_agent(
+        model: str,
+        tools: list[callable] = None,
+        system_prompt: str = None
+        ):
     """TODO: construct a framework agent with the tool(s) above registered.
 
     LangGraph: build a graph / prebuilt ReAct agent bound to a ChatAnthropic model + tools.
     Agent SDK: define the tool(s) and create the agent with your model.
     """
-    raise NotImplementedError("Build the framework agent")
+    agent = create_deep_agent(
+        model=model,
+        tools=tools,
+        system_prompt=system_prompt
+    )
+    return agent
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     """TODO: run the agent on the shared prompt and print the final answer + any tool calls made."""
-    _agent = build_agent()
-    raise NotImplementedError("Run the framework agent on the shared task")
+    parser = argparse.ArgumentParser(description="Stream a completion from an LLM.")
+    parser.add_argument("prompt", help="The user prompt")
+    parser.add_argument("--system", default=None, help="Optional system prompt")
+    parser.add_argument("--model", default=DEFAULT_MODEL)
+    args = parser.parse_args(argv)
+    
+    agent = create_deep_agent(
+        model=args.model,
+        tools=[add],
+        system_prompt=args.system
+    )
+    # result = agent.invoke({"messages": [{"role": "user", "content": args.prompt}]})
+    input = {"messages": [{"role": "user", "content": args.prompt}]}
+    stream = agent.stream_events(input, version="v3")
 
+    stream = agent.stream_events(input, version="v3")
+    
+    for message in stream.messages:
+        print(f"[{message.node}] ", end="")
+        for delta in message.text:
+            print(delta, end="", flush=True)
+    
+        full_message = message.output
+        usage = full_message.usage_metadata
+        if usage:
+            print(usage)
+    
+    # Print the agent's response
+    # print(result["messages"][-1].content)
+    
 
 if __name__ == "__main__":
     raise SystemExit(main())

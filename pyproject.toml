@@ -4,12 +4,15 @@ version = "0.1.0"
 description = "AI Engineering & Agents 8-week curriculum — capstone agent built across weeks."
 requires-python = ">=3.12"
 dependencies = [
+    "deepagents>=0.6.12",
     # Added progressively as each week needs them. Start minimal.
     # Week 2+: "anthropic>=0.40", "python-dotenv>=1.0"
     # Week 3+: "pydantic>=2.7"
     # Week 5+: "chromadb" or "sqlite-vec"
     # Week 8+: "fastapi", "uvicorn"
     "dotenv>=0.9.9",
+    "langchain-anthropic>=1.4.8",
+    "langgraph>=1.2.9",
     "pydantic>=2.13.4",
     "requests>=2.34.2",
 ]
