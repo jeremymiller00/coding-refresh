@@ -56,7 +56,7 @@ class Turn:
     - a tool-result turn has role="tool", the result in `content`, and the originating `tool_call_id`.
     """
     role: Role
-    content: str = ""
+    content: str | list[dict] = None
     tool_calls: list[ToolCall] = field(default_factory=list)
     tool_call_id: str | None = None
 
@@ -117,5 +117,10 @@ def run_agent(
             return assistant_response.content
         for call in assistant_response.tool_calls:
             tool_result = execute_tool(call, tools)
-            convo.append(Turn(role="tool", content=tool_result, tool_call_id=call.id))
+            tool_content = [{
+                "type": "tool_result",
+                "tool_use_id": call.id,
+                "content": tool_result
+                }]
+            convo.append(Turn(role="user", content=tool_content, tool_call_id=call.id))
     raise AgentError(f"No final answer withing {max_steps} steps")

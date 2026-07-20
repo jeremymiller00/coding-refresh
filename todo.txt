@@ -1,3 +1,5 @@
+figure out where cost stuff lives and is shown in agent mode
+
 make it generic beyond Anthropic
 work with local llm
 

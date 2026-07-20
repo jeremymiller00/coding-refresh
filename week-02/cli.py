@@ -72,7 +72,8 @@ def main(argv: list[str] | None = None) -> int:
     # TODO: implement the stream / no-stream branches and the usage line (to stderr).
 
     if args.agent:
-        run_agent(prompt=args.prompt, tools=TOOLS, model=_client.agent_complete)
+        agent_response = run_agent(prompt=args.prompt, tools=TOOLS, model=_client.agent_complete)
+        print(agent_response)
 
     elif args.stream:
         for chunk in _client.stream(_messages):

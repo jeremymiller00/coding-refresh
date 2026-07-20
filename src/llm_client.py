@@ -162,24 +162,30 @@ class LLMClient:
         except requests.exceptions.HTTPError:
             raise
 
-        # parse out if tool call
-
         json_response = response.json()
-        input_tokens = json_response.get("usage").get("input_tokens")
-        output_tokens = json_response.get("usage").get("output_tokens")
-        cost = estimate_cost(
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            input_per_mtok=PRICING.get(self.model).input_per_mtok,
-            output_per_mtok=PRICING.get(self.model).output_per_mtok
-        )
-        text_response = json_response.get("content")[0].get("text")
-        return LLMResponse(
-            text=text_response,
-            model=self.model,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            cost_usd=cost)
+        stop_reason = json_response.get("stop_reason")
+        # if tool call, return tool call
+        if stop_reason == "tool_use":
+            id = json_response.get("content")[-1].get("id")
+            name = json_response.get("content")[-1].get("name")
+            input = json_response.get("content")[-1].get("input")
+
+            return Turn(
+                role="assistant",
+                content=[{
+                    "type": "tool_use",
+                    "id": id,
+                    "name": name,
+                    "input": input
+                    }],
+                tool_calls=[ToolCall(id=id, name=name, arguments=input)]
+            )
+
+        elif stop_reason in ["end_turn", "stop_sequence", "max_tokens", "refusal"]:
+            return Turn(
+                role="assistant",
+                content=json_response.get("content")[-1].get("text")
+            )
 
     @call_with_retries
     def complete(
@@ -294,7 +300,7 @@ class LLMClient:
 
     def _build_payload(
         self,
-        messages: list[Message],
+        messages: list[Turn],
         max_tokens: int = 1024,
         temperature: float = 1.0,
         tools: list[Tool] = None,
@@ -305,13 +311,23 @@ class LLMClient:
             "temperature": temperature,
             "model": self.model,
             "stream": stream,
+            # "messages": messages
             "messages": [{"role": message.role, "content": message.content} for message in messages if message.role.lower() != "system"]
         }
 
         if tools:
-            payload.update({"tools": tools})
+            prepped_tools = self._prep_tools_for_payload(tools)
+            payload.update({"tools": prepped_tools})
 
         return payload
+
+    def _prep_tools_for_payload(self, tools: list[Tool]):
+        prepped_tools = []
+        for tool in tools:
+            tool_as_dict = asdict(tool)
+            prepped = {k: v for k, v in tool_as_dict.items() if k != "fn"}
+            prepped_tools.append(prepped)
+        return prepped_tools
 
     def _set_sys_prompt_parameter(
             self,
