@@ -13,6 +13,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "langchain-anthropic>=1.4.8",
     "langgraph>=1.2.9",
+    "openai>=2.46.0",
     "pydantic>=2.13.4",
     "requests>=2.34.2",
 ]
