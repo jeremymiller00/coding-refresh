@@ -1,0 +1,1 @@
+The framework Deepagents from Langchain / Langgraph abstacts away the mechanics of connecting to a LLM provider API, as well as core logic around agent loops. This seems very useful, provided it doesn't require much customization for a give use case.

@@ -16,6 +16,7 @@ Keep the LLM logic in llm_client.py — this file is just the I/O shell.
 from __future__ import annotations
 
 import argparse
+import functools
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
@@ -72,7 +73,8 @@ def main(argv: list[str] | None = None) -> int:
     # TODO: implement the stream / no-stream branches and the usage line (to stderr).
 
     if args.agent:
-        agent_response = run_agent(prompt=args.prompt, tools=TOOLS, model=_client.agent_complete)
+        model_fn = functools.partial(_client.agent_complete, system=args.system)
+        agent_response = run_agent(prompt=args.prompt, tools=TOOLS, model=model_fn)
         print(agent_response)
 
     elif args.stream:

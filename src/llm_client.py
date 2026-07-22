@@ -23,6 +23,7 @@ from __future__ import annotations
 
 from agent_loop import Tool, ToolCall, Turn
 
+import sys
 import time
 from collections.abc import Iterator
 from dataclasses import dataclass, asdict
@@ -131,8 +132,9 @@ class LLMClient:
     def agent_complete(
         self,
         convo: list[Turn],
-        tools: list[Tool] = []
-    ) -> LLMResponse:
+        tools: list[Tool] = [],
+        system: str | None = None,
+    ) -> Turn:
         """
         One-shot agentic completion.
         May return tool calls.
@@ -150,6 +152,7 @@ class LLMClient:
         payload = self._set_sys_prompt_parameter(
             payload=payload,
             messages=convo,
+            sys_prompt=system,
         )
 
         try:
@@ -163,29 +166,31 @@ class LLMClient:
             raise
 
         json_response = response.json()
+
+        input_tokens = json_response.get("usage").get("input_tokens")
+        output_tokens = json_response.get("usage").get("output_tokens")
+        cost = estimate_cost(
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            input_per_mtok=PRICING.get(self.model).input_per_mtok,
+            output_per_mtok=PRICING.get(self.model).output_per_mtok
+        )
+        print(f"Cost: {cost}", file=sys.stderr)
+        print(f"Input Tokens: {input_tokens}", file=sys.stderr)
+        print(f"Output Tokens: {output_tokens}", file=sys.stderr)
+
         stop_reason = json_response.get("stop_reason")
-        # if tool call, return tool call
+        content_blocks = json_response.get("content") or []
+
         if stop_reason == "tool_use":
-            id = json_response.get("content")[-1].get("id")
-            name = json_response.get("content")[-1].get("name")
-            input = json_response.get("content")[-1].get("input")
+            tool_calls = [
+                ToolCall(id=b["id"], name=b["name"], arguments=b["input"])
+                for b in content_blocks if b.get("type") == "tool_use"
+            ]
+            return Turn(role="assistant", content=content_blocks, tool_calls=tool_calls)
 
-            return Turn(
-                role="assistant",
-                content=[{
-                    "type": "tool_use",
-                    "id": id,
-                    "name": name,
-                    "input": input
-                    }],
-                tool_calls=[ToolCall(id=id, name=name, arguments=input)]
-            )
-
-        elif stop_reason in ["end_turn", "stop_sequence", "max_tokens", "refusal"]:
-            return Turn(
-                role="assistant",
-                content=json_response.get("content")[-1].get("text")
-            )
+        text = "".join(b.get("text", "") for b in content_blocks if b.get("type") == "text")
+        return Turn(role="assistant", content=text)
 
     @call_with_retries
     def complete(
@@ -306,13 +311,28 @@ class LLMClient:
         tools: list[Tool] = None,
         stream: bool = True
     ) -> dict[str, any]:
+        messages_payload = []
+        for message in messages:
+            if message.role == "system":
+                continue
+            if message.role == "tool":
+                messages_payload.append({
+                    "role": "user",
+                    "content": [{
+                        "type": "tool_result",
+                        "tool_use_id": message.tool_call_id,
+                        "content": message.content,
+                    }],
+                })
+            else:
+                messages_payload.append({"role": message.role, "content": message.content})
+
         payload = {
             "max_tokens": max_tokens,
             "temperature": temperature,
             "model": self.model,
             "stream": stream,
-            # "messages": messages
-            "messages": [{"role": message.role, "content": message.content} for message in messages if message.role.lower() != "system"]
+            "messages": messages_payload,
         }
 
         if tools:
@@ -333,7 +353,7 @@ class LLMClient:
             self,
             payload: dict[str, Any],
             messages: list[Message],
-            sys_prompt: None = None
+            sys_prompt: str | None = None
     ) -> dict[str, Any]:
         """ Required for Anthropic messages API"""
         for message in messages:

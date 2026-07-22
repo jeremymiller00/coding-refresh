@@ -117,10 +117,5 @@ def run_agent(
             return assistant_response.content
         for call in assistant_response.tool_calls:
             tool_result = execute_tool(call, tools)
-            tool_content = [{
-                "type": "tool_result",
-                "tool_use_id": call.id,
-                "content": tool_result
-                }]
-            convo.append(Turn(role="user", content=tool_content, tool_call_id=call.id))
+            convo.append(Turn(role="tool", content=tool_result, tool_call_id=call.id))
     raise AgentError(f"No final answer withing {max_steps} steps")
