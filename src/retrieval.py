@@ -28,6 +28,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from math import sqrt
 
 # Embed a batch of texts into a list of equal-length float vectors.
 EmbedFn = Callable[[list[str]], list[list[float]]]
@@ -58,15 +59,67 @@ def chunk_text(
     Every chunk carries `source`. Short text -> a single chunk. Overlap keeps context from being
     severed at boundaries. (Real systems chunk on tokens/sentences; chars keep this testable.)
     """
-    raise NotImplementedError("Implement chunk_text")
+    text_length = len(text)
+    if text_length < max_chars:
+        return [Chunk(text=text, source=source)]
+
+    start_of_chunk = 0
+    chunks = []
+    while start_of_chunk < text_length:
+        last = start_of_chunk + max_chars
+        if last > text_length:
+            last = text_length
+        
+        text_chunk = text[start_of_chunk:last]
+        chunks.append(Chunk(text=text_chunk, source=source))
+        start_of_chunk += (max_chars - overlap)
+
+    return chunks
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
     """Cosine similarity of two equal-length vectors: dot(a, b) / (||a|| * ||b||).
 
     Pure math, no dependencies. Return 0.0 if either vector has zero magnitude (avoid dividing by 0).
+    
+    compute magnitudes
+    if one is 0, return 0.0
+    compute dot product
+    compute cosine sim
     """
-    raise NotImplementedError("Implement cosine_similarity")
+    norm_a = l2_norm(a)
+    norm_b = l2_norm(b)
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    
+    dot_product = dot(a, b)
+
+    return dot_product / (norm_a * norm_b)
+
+
+def l2_norm(x: list[float]) -> float:
+    '''
+    Compute the l2 norm of a vector
+    '''
+    x_squared = [n**2 for n in x]
+    x_sum = sum(x_squared)
+    l2_norm_a = sqrt(x_sum)
+
+    return l2_norm_a
+
+
+def dot(x: list[float], y: list[float]) -> float:
+    '''
+    Compute the dot product of two vectors
+    '''
+    if not len(x) == len(y):
+        raise ValueError("The two vectors must be the same length")
+    
+    dot_product = 0.0
+    for i in range(len(x)):
+        dot_product += (x[i] * y[i])
+    
+    return dot_product
 
 
 def build_context(results: list[SearchResult]) -> str:
