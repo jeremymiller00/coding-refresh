@@ -128,7 +128,11 @@ def build_context(results: list[SearchResult]) -> str:
     Include each chunk's source so the agent can attribute its answer (that's the week's self-check).
     e.g.  "[source: feedback_042.md]\\n<chunk text>\\n\\n[source: ...]\\n..."
     """
-    raise NotImplementedError("Implement build_context")
+    context = ""
+    for result in results:
+        context += f"[source: {result.chunk.source}]: {result.chunk.text}\\n"
+
+    return context
 
 
 class VectorStore:
@@ -140,11 +144,34 @@ class VectorStore:
 
     def add(self, chunks: list[Chunk], embed: EmbedFn) -> None:
         """Embed the chunks (batch the texts through `embed`) and store them with their vectors."""
-        raise NotImplementedError("Implement VectorStore.add")
+        embeddings = embed([chunk.text for chunk in chunks])
+        for i in range(len(chunks)):
+            self._entries.append((chunks[i], embeddings[i]))
+        return None
 
     def search(self, query: str, embed: EmbedFn, k: int = 4) -> list[SearchResult]:
         """Embed the query, score every stored chunk by cosine similarity, return the top-k.
 
         Results sorted by score descending. If the store is empty, return [].
+
+        check empty
+        embed query
+        calculate score for each pair(query, chunk)
+        sort by highest score
+        return top k
         """
-        raise NotImplementedError("Implement VectorStore.search")
+        if self._entries == []:
+            return []
+        
+        query_embedding = embed([query])[0]
+        results = []
+        for entry in self._entries:
+            results.append(
+                SearchResult(
+                    chunk=entry[0],
+                    score=cosine_similarity(query_embedding, entry[1])
+                    )
+                )
+            
+        results.sort(key=lambda x: x.score, reverse=True)
+        return results[:k]
