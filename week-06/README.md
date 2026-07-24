@@ -1,5 +1,4 @@
 # Week 6 — Multi-Step Patterns & MCP
-
 **Why:** Real agents plan, reflect, and compose tools — and the industry is standardizing
 tool/context integration on **MCP** (Model Context Protocol).
 
