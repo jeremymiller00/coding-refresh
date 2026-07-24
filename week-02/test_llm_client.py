@@ -42,5 +42,5 @@ def test_cli():
 @pytest.mark.integration
 def test_cli_agent():
     """Convenience test for debugger"""
-    prompt = ["what is 2 plus 3", "--agent"]
+    prompt = ["how do computers work", "--agent"]
     cli.main(prompt)

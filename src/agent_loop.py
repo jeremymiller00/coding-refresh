@@ -93,7 +93,7 @@ def run_agent(
     *,
     tools: list[Tool],
     model: ModelFn,
-    max_steps: int = 10,
+    max_steps: int = 10
 ) -> str:
     """Drive the agent loop to a final answer.
 
@@ -118,4 +118,5 @@ def run_agent(
         for call in assistant_response.tool_calls:
             tool_result = execute_tool(call, tools)
             convo.append(Turn(role="tool", content=tool_result, tool_call_id=call.id))
+
     raise AgentError(f"No final answer withing {max_steps} steps")

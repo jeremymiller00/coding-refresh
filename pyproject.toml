@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "AI Engineering & Agents 8-week curriculum — capstone agent built across weeks."
 requires-python = ">=3.12"
 dependencies = [
+    "chromadb>=1.5.9",
     "deepagents>=0.6.12",
     # Added progressively as each week needs them. Start minimal.
     # Week 2+: "anthropic>=0.40", "python-dotenv>=1.0"

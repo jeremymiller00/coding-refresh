@@ -78,14 +78,11 @@ def chunk_text(
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
-    """Cosine similarity of two equal-length vectors: dot(a, b) / (||a|| * ||b||).
+    """Cosine similarity of two equal-length vectors: 
+    dot(a, b) / (||a|| * ||b||).
 
-    Pure math, no dependencies. Return 0.0 if either vector has zero magnitude (avoid dividing by 0).
-    
-    compute magnitudes
-    if one is 0, return 0.0
-    compute dot product
-    compute cosine sim
+    Pure math, no dependencies.
+    Return 0.0 if either vector has zero magnitude (avoid dividing by 0).
     """
     norm_a = l2_norm(a)
     norm_b = l2_norm(b)
@@ -125,7 +122,8 @@ def dot(x: list[float], y: list[float]) -> float:
 def build_context(results: list[SearchResult]) -> str:
     """Format retrieved chunks into a context block the model can quote and CITE.
 
-    Include each chunk's source so the agent can attribute its answer (that's the week's self-check).
+    Include each chunk's source so the agent can attribute its answer 
+    (that's the week's self-check).
     e.g.  "[source: feedback_042.md]\\n<chunk text>\\n\\n[source: ...]\\n..."
     """
     context = ""
@@ -153,12 +151,6 @@ class VectorStore:
         """Embed the query, score every stored chunk by cosine similarity, return the top-k.
 
         Results sorted by score descending. If the store is empty, return [].
-
-        check empty
-        embed query
-        calculate score for each pair(query, chunk)
-        sort by highest score
-        return top k
         """
         if self._entries == []:
             return []
