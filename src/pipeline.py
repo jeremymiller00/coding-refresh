@@ -55,7 +55,15 @@ def score_items(items: list[str], *, score_fn: ScoreFn) -> list[Scored]:
     that item with score 0.0 and rationale ``f"error: {e}"`` and keep going. One bad item must not
     sink the batch. Every input item appears in the output, in input order.
     """
-    raise NotImplementedError("Implement score_items with per-item recovery")
+    result = []
+    for item in items:
+        try:
+            score = score_fn(item)
+            scored_item = Scored(text=item, score=score[0], rationale=score[1])
+        except Exception as e:
+            scored_item = Scored(text=item, score=0.0, rationale=f"error:{e}")
+        result.append(scored_item)
+    return result
 
 
 def rank_items(scored: list[Scored]) -> list[Priority]:
@@ -63,13 +71,32 @@ def rank_items(scored: list[Scored]) -> list[Priority]:
 
     Break ties deterministically by text ascending, so runs are reproducible.
     """
-    raise NotImplementedError("Implement rank_items")
+    sorted_by_text = sorted(
+        scored,
+        key=lambda x: x.text
+    )
+    sorted_by_score = sorted(
+        sorted_by_text,
+        key=lambda x: x.score,
+        reverse=True
+    )
+
+    result = []
+    for index, item in enumerate(sorted_by_score):
+        result.append(Priority(
+            rank=index+1,
+            text=item.text,
+            score=item.score,
+            rationale=item.rationale
+            )
+        )
+    return result
 
 
 def prioritize(items: list[str], *, score_fn: ScoreFn) -> list[Priority]:
     """The workflow: score all items (with recovery), then rank them."""
-    raise NotImplementedError("Implement prioritize (compose score_items + rank_items)")
-
+    return rank_items(score_items(items, score_fn=score_fn))
+    
 
 def draft_summary(priorities: list[Priority], *, top_n: int, write_fn: WriteFn) -> str:
     """Build a prompt from the top-N priorities and ask `write_fn` to draft the recommendation.
@@ -77,4 +104,16 @@ def draft_summary(priorities: list[Priority], *, top_n: int, write_fn: WriteFn) 
     The prompt should include each top item's text/score/rationale so the draft is grounded.
     Returns whatever `write_fn` produces.
     """
-    raise NotImplementedError("Implement draft_summary")
+    keepers = priorities[:top_n]
+    priorities_prompt = ""
+    for k in keepers:
+        priorities_prompt += f"Rank: {str(k.rank)}\nText: {k.text}\nScore: {str(k.score)}\nRationale: {k.rationale}"
+
+    prompt = f"""
+    You are an expert analyst. 
+    Draft your recommendation based on the top priorities discovered during research:
+
+    Top Priorities:
+    {priorities_prompt}"""
+
+    return write_fn(prompt)
