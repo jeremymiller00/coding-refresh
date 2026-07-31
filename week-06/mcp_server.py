@@ -34,11 +34,42 @@ Fill in the TODO below.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+# Make the shared src/ package importable when running this script directly.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-def main() -> None:
+import pipeline as pl
+import llm_client as llm
+from mcp.server.mcpserver import MCPServer
+from dotenv import load_dotenv
+load_dotenv()
+
+
+client = llm.LLMClient(model="claude-haiku-4-5")
+mcp = MCPServer("prioritize-pipeline")
+
+def write(prompt: str) -> str:
+    messages = llm.build_messages(prompt=prompt)
+    response = client.complete(messages=messages)
+    return response.text
+
+
+def score(prompt: str) -> tuple(float, str):
+    return (0.0, "yes")
+
+
+@mcp.tool()
+def draft_summary(items: list[str]) -> str:
     # TODO: build a FastMCP server, register one capability that reuses your src/ code, and run it.
-    raise NotImplementedError("Expose a capstone capability over MCP")
+    prioritized_items = pl.prioritize(items=items, score_fn=score)
+    summary = pl.draft_summary(
+        priorities=prioritized_items,
+        top_n=5,
+        write_fn=write
+        )
+    return summary
 
 
 if __name__ == "__main__":
-    main()
+    mcp.run()
