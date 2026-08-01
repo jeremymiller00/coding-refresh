@@ -1,0 +1,4 @@
+{"id": "sso-onboarding", "input": "The admin setup was painful — SSO config failed three times because the error messages never said which field was wrong. Once working, the product is great.", "reference": "negative"}
+{"id": "mobile-perf", "input": "Dashboard takes 8-10 seconds to load on my older Android and the login screen sometimes hangs. Just make it fast.", "reference": "negative"}
+{"id": "happy-power-user", "input": "Honestly the best tool we've adopted this year — the API is clean and the docs are excellent. No complaints.", "reference": "positive"}
+{"id": "neutral-question", "input": "Is there a way to export reports to CSV? Couldn't find it in the settings menu.", "reference": "neutral"}
