@@ -95,20 +95,7 @@ def run_agent(
     model: ModelFn,
     max_steps: int = 10
 ) -> str:
-    """Drive the agent loop to a final answer.
-
-    Sketch:
-        convo = [Turn(role="user", content=prompt)]
-        for _ in range(max_steps):
-            assistant = model(convo, tools)
-            convo.append(assistant)
-            if not assistant.tool_calls:      # no tools requested -> final answer
-                return assistant.content
-            for call in assistant.tool_calls:
-                result = execute_tool(call, tools)
-                convo.append(Turn(role="tool", content=result, tool_call_id=call.id))
-        raise AgentError(f"No final answer within {max_steps} steps")
-    """
+    """Drive the agent loop to a final answer."""
     convo = [Turn(role="user", content=prompt)]
     for _ in range(max_steps):
         assistant_response = model(convo, tools)

@@ -21,3 +21,10 @@ The agent recovers from a failed step instead of derailing.
 
 ## Resources
 MCP docs (modelcontextprotocol.io) · "Building effective agents" (patterns) — see [../RESOURCES.md](../RESOURCES.md)
+
+## What MCP give you over plain python tools
+Using MCP, the tools can be written as straightforward python functions. The framework provides the schema, interface between the client application and the tools the MCP contains, and the MCP inspector tool for isolated testing of the MCP.
+
+Using MCP facilitates re-use across tools such as Claude Code, or the Claude desktop app, or really any application that can interact with MCPs. It does this through a standardized discovery mechanism, such as `tools/list`.
+
+The MCP framework also handles the setup and operation of the standard transport protocol so that the client can invoke the MCP tools without custom glue code. 

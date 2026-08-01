@@ -36,13 +36,16 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+
 # Make the shared src/ package importable when running this script directly.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-import pipeline as pl
-import llm_client as llm
-from mcp.server.mcpserver import MCPServer
 from dotenv import load_dotenv
+from mcp.server.mcpserver import MCPServer
+
+import llm_client as llm
+import pipeline as pl
+
 load_dotenv()
 
 
@@ -55,13 +58,14 @@ def write(prompt: str) -> str:
     return response.text
 
 
-def score(prompt: str) -> tuple(float, str):
-    return (0.0, "yes")
+def score(text: str) -> tuple[float, str]:
+    """Generic scoring function.
+    A valid scoring function depends on the use case"""
+    return float(len(text)), f"len={len(text)}"
 
 
 @mcp.tool()
 def draft_summary(items: list[str]) -> str:
-    # TODO: build a FastMCP server, register one capability that reuses your src/ code, and run it.
     prioritized_items = pl.prioritize(items=items, score_fn=score)
     summary = pl.draft_summary(
         priorities=prioritized_items,

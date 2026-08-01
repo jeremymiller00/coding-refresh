@@ -4,7 +4,6 @@ Steps are injected as deterministic fakes, so we can verify orchestration AND th
 contract (one item's scoring raises; the pipeline must recover it and keep going).
 """
 
-import pytest
 
 from pipeline import (
     Priority,
