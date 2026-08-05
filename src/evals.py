@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from numpy import mean
 
 RunFn = Callable[[str], str]  # system under test: input -> output
 JudgeFn = Callable[[str, str], float]  # (output, reference) -> score in [0, 1]
@@ -61,7 +62,38 @@ def run_evals(
     Per case: output = run_fn(input); score = judge_fn(output, reference); passed = score >= threshold.
     Report: mean_score = average score, pass_rate = fraction passed. Empty input -> (0.0, 0.0).
     """
-    raise NotImplementedError("Implement run_evals")
+    if len(cases) == 0:
+        return Report(
+            results=[],
+            mean_score=0.0,
+            pass_rate=0.0
+        )
+
+    eval_results = []
+    scores = []
+    passed = []
+    for case in cases:
+        case_output = run_fn(case.input)
+        case_score = judge_fn(case_output, case.reference)
+        scores.append(case_score)
+        case_passed = case_score >= threshold
+        passed.append(case_passed)
+        result = CaseResult(
+            id=case.id,
+            output=case_output,
+            score=case_score,
+            passed=case_passed
+        )
+        eval_results.append(result)
+
+    mean_score = float(mean(scores))
+    pass_rate = float(mean(passed))
+
+    return Report(
+        results=eval_results,
+        mean_score=mean_score,
+        pass_rate=pass_rate
+    )
 
 
 def check_regression(report: Report, *, baseline: float, tolerance: float = 0.0) -> bool:
@@ -70,7 +102,9 @@ def check_regression(report: Report, *, baseline: float, tolerance: float = 0.0)
     This is the CI gate — a prompt change that lowers the score beyond tolerance should fail the
     build. It's also the week's self-check: quantifying better-or-worse instead of eyeballing it.
     """
-    raise NotImplementedError("Implement check_regression")
+    if report.mean_score < (baseline - tolerance):
+        return True
+    return False
 
 
 # A few common prompt-injection markers. Real guardrails are fuzzier; this teaches the idea.
@@ -89,4 +123,7 @@ def detect_prompt_injection(text: str) -> bool:
     An input guardrail: you'd run this before feeding untrusted text (e.g. scraped feedback) to the
     model, and flag/quarantine rather than execute it.
     """
-    raise NotImplementedError("Implement detect_prompt_injection")
+    for marker in _INJECTION_MARKERS:
+        if marker in text.lower().strip():
+            return True
+    return False
