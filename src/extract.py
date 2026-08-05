@@ -99,7 +99,7 @@ def extract(
     call_model: ModelCall,
     max_attempts: int = 3,
 ) -> Feedback:
-    """Extract a validated Feedback, re-prompting on parse/validation failure.    """
+    """Extract a validated Feedback, re-prompting on parse/validation failure."""
     prompt = build_extraction_prompt(raw_text)
     last_error = None
     for _ in range(max_attempts):

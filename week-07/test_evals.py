@@ -74,3 +74,9 @@ def test_flags_injection():
 
 def test_allows_benign_text():
     assert detect_prompt_injection("The onboarding flow is confusing and SSO failed twice") is False
+
+
+# --- convenience test for run_evals.py
+def test_run_evals_script():
+    import run_evals
+    run_evals.main()

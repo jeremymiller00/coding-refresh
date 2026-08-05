@@ -18,6 +18,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+import extract
+import llm_client
 from evals import EvalCase, check_regression, run_evals  # noqa: E402
 
 DATASET = Path(__file__).parent / "evals" / "dataset.jsonl"
@@ -38,15 +40,36 @@ def run_fn(text: str) -> str:
 
     e.g. extract(text, call_model=...) and return the sentiment, or run the full agent.
     """
-    raise NotImplementedError("Wire run_fn to your capstone")
+    client = llm_client.LLMClient(model="claude-haiku-4-5")
 
+    def call_model(prompt):
+        return client.complete(llm_client.build_messages(text)).text
+    
+    extraction = extract.extract(
+        raw_text=text,
+        call_model=call_model
+    )
+    return extraction.sentiment
+    
 
 def judge_fn(output: str, reference: str) -> float:
     """TODO: LLM-as-judge — ask a model whether `output` matches `reference`, return a score in [0,1].
 
     Keep the judge prompt tight (rubric + 'reply only 0 or 1'). Parse its reply into a float.
     """
-    raise NotImplementedError("Wire judge_fn to an LLM judge")
+    client = llm_client.LLMClient(model="claude-haiku-4-5")
+
+    JUDGE_PROMPT = f"""
+    Your only task is to compare {output} to {reference}.
+    If they match, return 1
+    If they do not match, return 0
+    NEVER return anything other that 1 or 0 
+    """
+    judge_response = client.complete(llm_client.build_messages(JUDGE_PROMPT)).text
+    try:
+        return int(judge_response)
+    except Exception:
+        return 0.0
 
 
 def main() -> int:
