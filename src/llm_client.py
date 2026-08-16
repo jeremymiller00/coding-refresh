@@ -198,7 +198,8 @@ class LLMClient:
         messages: list[Message],
         *,
         max_tokens: int = 1024,
-        temperature: float = 1.0
+        temperature: float = 1.0,
+        output_config: dict = None
     ) -> LLMResponse:
         """One-shot completion. Returns text plus token usage and computed cost."""
 
@@ -206,7 +207,9 @@ class LLMClient:
             messages=messages,
             max_tokens=max_tokens,
             temperature=temperature,
-            stream=False
+            stream=False,
+            output_config=output_config
+
         )
 
         # anthropic api requires sys prompt as a separate parameter
@@ -255,7 +258,7 @@ class LLMClient:
         payload = self._build_payload(
             messages=messages,
             max_tokens=max_tokens,
-            temperature=temperature,
+            temperature=temperature
             )
 
         # anthropic api requires sys prompt as a separate parameter
@@ -309,7 +312,8 @@ class LLMClient:
         max_tokens: int = 1024,
         temperature: float = 1.0,
         tools: list[Tool] = None,
-        stream: bool = True
+        stream: bool = True,
+        output_config: dict = None
     ) -> dict[str, any]:
         messages_payload = []
         for message in messages:
@@ -338,6 +342,9 @@ class LLMClient:
         if tools:
             prepped_tools = self._prep_tools_for_payload(tools)
             payload.update({"tools": prepped_tools})
+
+        if output_config:
+            payload.update({"output_config": output_config})
 
         return payload
 

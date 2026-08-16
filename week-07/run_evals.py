@@ -43,7 +43,14 @@ def run_fn(text: str) -> str:
     client = llm_client.LLMClient(model="claude-haiku-4-5")
 
     def call_model(prompt):
-        return client.complete(llm_client.build_messages(text)).text
+        output_schema = extract.Feedback.model_json_schema()
+        output_schema.update({"additionalProperties": False})
+        return client.complete(
+            messages=llm_client.build_messages(prompt),
+            output_config={"format": {
+                "type": "json_schema",
+                "schema": output_schema}}
+        ).text
     
     extraction = extract.extract(
         raw_text=text,
@@ -60,10 +67,14 @@ def judge_fn(output: str, reference: str) -> float:
     client = llm_client.LLMClient(model="claude-haiku-4-5")
 
     JUDGE_PROMPT = f"""
-    Your only task is to compare {output} to {reference}.
+    You are a comparator of sentiment values.
+    Your only task is to compare two outputs.
     If they match, return 1
     If they do not match, return 0
     NEVER return anything other that 1 or 0 
+
+    In this case the sentiment values are {output} and {reference}.
+    Make the comparison now.
     """
     judge_response = client.complete(llm_client.build_messages(JUDGE_PROMPT)).text
     try:

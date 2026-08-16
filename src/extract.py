@@ -45,7 +45,7 @@ class Feedback(BaseModel):
     feature_requests: list[str] = Field(
         default_factory=list, description="Explicit asks, empty if none"
     )
-    severity: int = Field(ge=1, le=5, description="1 = trivial, 5 = blocking/critical")
+    severity: int = Field(description="1 = trivial, 5 = blocking/critical")
 
 
 class ExtractionError(RuntimeError):
@@ -64,12 +64,7 @@ def build_extraction_prompt(raw_text: str) -> str:
     You will receive customer feedback in raw text form.
     Your job is to return a correctly parsed and validated structured json object.
     You MUST return only valid JSON in the format of {feedback_schema}.
-    The following fields are the only ones allowed:
-    summary: (string)
-    sentiment: Enum["positive", "neutral", "negative"]
-    themes: List[string]
-    feature_requests: List[string]
-    severity (int)
+    Return valid JSON in this format ONLY.
     """
     return prompt_addition + "\nHere is the raw text:\n" + raw_text
 
