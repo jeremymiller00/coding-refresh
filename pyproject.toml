@@ -12,6 +12,7 @@ dependencies = [
     # Week 5+: "chromadb" or "sqlite-vec"
     # Week 8+: "fastapi", "uvicorn"
     "dotenv>=0.9.9",
+    "fastapi[standard]>=0.141.1",
     "langchain-anthropic>=1.4.8",
     "langgraph>=1.2.9",
     "mcp[cli]>=2.0.0",
